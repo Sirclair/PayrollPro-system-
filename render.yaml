@@ -10,8 +10,7 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: DATABASE_URI
-        value: sqlite:///data/payroll.db
-    disk:
-      name: payroll-data
-      mountPath: /data
-    plan: free  # Remove for production (uses Starter plan)
+        value: sqlite:///tmp/payroll.db  # Changed to /tmp
+    
+    # REMOVED disk section entirely
+    plan: free
