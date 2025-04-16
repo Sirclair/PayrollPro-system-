@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Payslip for {{ employee.name }}</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        .payslip { 
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ddd;
+        }
+        .header { 
+            text-align: center; 
+            margin-bottom: 20px;
+        }
+        .company-name {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .details { 
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+        .detail-group {
+            margin-bottom: 10px;
+            min-width: 200px;
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-bottom: 20px;
+        }
+        th, td { 
+            padding: 10px; 
+            border: 1px solid #ddd; 
+            text-align: left;
+        }
+        th { 
+            background-color: #f2f2f2; 
+            font-weight: bold;
+        }
+        .total { 
+            font-weight: bold;
+            background-color: #f9f9f9;
+        }
+        .signature {
+            margin-top: 40px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .signature-line {
+            width: 200px;
+            border-top: 1px solid #000;
+            text-align: center;
+            padding-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="payslip">
+        <div class="header">
+            <div class="company-name">YOUR COMPANY NAME</div>
+            <h2>PAYSLIP - {{ pay_period }}</h2>
+        </div>
+        
+        <div class="details">
+            <div class="detail-group">
+                <p><strong>Employee:</strong> {{ employee.name }}</p>
+                <p><strong>Employee ID:</strong> {{ employee.id }}</p>
+            </div>
+            <div class="detail-group">
+                <p><strong>Pay Date:</strong> {{ current_date }}</p>
+                <p><strong>Hours Worked:</strong> {{ hours_worked }}</p>
+            </div>
+        </div>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Hours</th>
+                    <th>Rate</th>
+                    <th>Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Regular Pay</td>
+                    <td>{{ pay_data.regular_hours }}</td>
+                    <td>${{ "%.2f"|format(hourly_rate) }}/hr</td>
+                    <td>${{ "%.2f"|format(pay_data.regular_pay) }}</td>
+                </tr>
+                {% if pay_data.overtime_hours > 0 %}
+                <tr>
+                    <td>Overtime Pay</td>
+                    <td>{{ pay_data.overtime_hours }}</td>
+                    <td>${{ "%.2f"|format(hourly_rate * 1.5) }}/hr</td>
+                    <td>${{ "%.2f"|format(pay_data.overtime_pay) }}</td>
+                </tr>
+                {% endif %}
+                <tr class="total">
+                    <td colspan="3">Gross Pay</td>
+                    <td>${{ "%.2f"|format(pay_data.gross) }}</td>
+                </tr>
+                <tr>
+                    <td colspan="3">Tax Deduction ({{ (employee.tax_rate * 100)|round(2) }}%)</td>
+                    <td>-${{ "%.2f"|format(pay_data.tax) }}</td>
+                </tr>
+                <tr class="total">
+                    <td colspan="3">Net Pay</td>
+                    <td>${{ "%.2f"|format(pay_data.net) }}</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div class="signature">
+            <div class="signature-line">Employee Signature</div>
+            <div class="signature-line">Authorized Signature</div>
+        </div>
+    </div>
+</body>
+</html>

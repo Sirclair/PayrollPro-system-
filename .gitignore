@@ -1,0 +1,78 @@
+### Python ###
+# Byte-compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+.venv/
+venv/
+ENV/
+env/
+
+# Database files
+instance/payroll.db
+*.sqlite
+*.sqlite3
+*.db
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Flask secret files
+secret_key.txt
+
+### IDE ###
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# PyCharm
+.idea/
+*.iml
+*.ipr
+*.iws
+
+### System ###
+# OS metadata
+.DS_Store
+Thumbs.db
+desktop.ini
+
+### Logs ###
+*.log
+logs/
+
+### Testing ###
+# Coverage reports
+.coverage
+htmlcov/
+.pytest_cache/
+
+### Frontend ###
+# Node modules
+node_modules/
+
+# Build files
+dist/
+build/
+
+### PDF Generation ###
+# Temporary PDF files
+*.pdf
+!template_sample.pdf
+
+### Project Specific ###
+# Local development files
+local_settings.py
+config.local.py
+
+# Sensitive data files
+credentials.json
+*.key
+*.pem
