@@ -6,9 +6,11 @@ Key Features:
 - Employee CRUD operations
 - Pay calculation logic
 - PDF payslip generation using WeasyPrint
-- SQLite database backend
+- SQLite database backend with automatic initialization
+- Comprehensive error handling
 """
 
+import os
 import sqlite3
 import logging
 from datetime import datetime
@@ -19,15 +21,14 @@ from weasyprint import HTML, CSS
 from weasyprint.text.fonts import FontConfiguration
 
 # Initialize Flask application
-app = Flask(__name__)
+app = Flask(__name__, template_folder='templates')
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Application Configuration
-# Note: In production, use environment variables for secrets
-app.secret_key = 'your-secret-key-here'  # Change for production
+app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key')  # Change for production
 app.config['DATABASE'] = '/tmp/payroll.db'  # Using /tmp for Render compatibility
 
 # Database Helper Functions
@@ -43,25 +44,31 @@ def get_db():
 def init_db():
     """
     Initialize the database with required schema.
-    Creates the employees table if it doesn't exist.
+    Creates the database file and employees table if they don't exist.
     """
-    with app.app_context(), closing(get_db()) as db:
-        db.execute('''
-            CREATE TABLE IF NOT EXISTS employees (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                email TEXT,
-                phone TEXT,
-                job_title TEXT,
-                department TEXT,
-                hourly_rate REAL NOT NULL,
-                employment_type TEXT,
-                tax_rate REAL DEFAULT 0.15,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        ''')
-        db.commit()
-        logger.info("Database initialized successfully")
+    with app.app_context():
+        # Ensure directory exists
+        db_path = Path(app.config['DATABASE'])
+        db_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        # Create tables if they don't exist
+        with closing(get_db()) as db:
+            db.execute('''
+                CREATE TABLE IF NOT EXISTS employees (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    email TEXT,
+                    phone TEXT,
+                    job_title TEXT,
+                    department TEXT,
+                    hourly_rate REAL NOT NULL,
+                    employment_type TEXT,
+                    tax_rate REAL DEFAULT 0.15,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
+            db.commit()
+            logger.info("Database initialized successfully")
 
 def query_db(query, args=(), one=False):
     """
@@ -132,20 +139,30 @@ class Employee:
             logger.error(f"Invalid hours value: {hours}")
             raise ValueError("Hours must be a valid number")
 
+# Error Handlers
+@app.errorhandler(404)
+def not_found_error(error):
+    return render_template('error.html', message="Page not found"), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    return render_template('error.html', message="Internal server error"), 500
+
 # Application Routes
 @app.route('/')
 def dashboard():
     """Display the main dashboard with employee list and average pay rate."""
     try:
+        init_db()  # Ensure database is initialized
         employees = query_db('SELECT * FROM employees ORDER BY name')
         avg_result = query_db('SELECT AVG(hourly_rate) FROM employees', one=True)[0]
         avg_rate = round(float(avg_result), 2) if avg_result else 0.00
         return render_template('dashboard.html', 
-                             employees=employees, 
-                             avg_rate=avg_rate)
+                            employees=employees, 
+                            avg_rate=avg_rate)
     except Exception as e:
         logger.error(f"Dashboard error: {e}")
-        return render_template('error.html', message="Failed to load dashboard"), 500
+        return render_template('error.html', message=str(e)), 500
 
 @app.route('/add', methods=['POST'])
 def add_employee():
@@ -174,7 +191,7 @@ def add_employee():
             return "Invalid hourly rate", 400
         except Exception as e:
             logger.error(f"Error adding employee: {e}")
-            return str(e), 500
+            return render_template('error.html', message=str(e)), 500
 
 @app.route('/calculate/<int:emp_id>', methods=['POST'])
 def calculate_pay(emp_id):
@@ -200,7 +217,7 @@ def delete_employee(emp_id):
         return redirect(url_for('dashboard'))
     except Exception as e:
         logger.error(f"Delete error: {e}")
-        return "Failed to delete employee", 500
+        return render_template('error.html', message=str(e)), 500
 
 @app.route('/payslip/<int:emp_id>')
 def generate_payslip(emp_id):
@@ -297,26 +314,18 @@ def generate_payslip(emp_id):
         logger.error(f"Payslip generation error: {e}")
         abort(500, description="Internal server error")
 
-@app.route('/employee/<int:employee_id>')
-def get_employee(employee_id):
-    """API endpoint to get employee data in JSON format."""
+@app.route('/healthcheck')
+def healthcheck():
+    """Endpoint for service health monitoring."""
     try:
-        employee = query_db('SELECT * FROM employees WHERE id = ?', [employee_id], one=True)
-        if not employee:
-            return jsonify({"error": "Employee not found"}), 404
-        return jsonify(dict(employee))
+        init_db()
+        query_db("SELECT 1 FROM employees LIMIT 1")
+        return jsonify({"status": "healthy"})
     except Exception as e:
-        logger.error(f"Employee API error: {e}")
-        return jsonify({"error": "Server error"}), 500
+        return jsonify({"status": "unhealthy", "error": str(e)}), 500
 
 # Application Entry Point
 if __name__ == '__main__':
-    # Create database directory if needed
-    db_path = Path(app.config['DATABASE'])
-    if not db_path.parent.exists():
-        db_path.parent.mkdir(parents=True)
-        logger.info(f"Created database directory at {db_path.parent}")
-    
     # Initialize database
     init_db()
     

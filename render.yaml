@@ -5,11 +5,10 @@ services:
     pythonVersion: "3.11.11"
     buildCommand: |
       python -m pip install --upgrade pip
-      python -m pip install -r requirements.txt
+      pip install -r requirements.txt
+      python -c "from app_backend.main import init_db; init_db()"
     startCommand: gunicorn --worker-tmp-dir /dev/shm app_backend.main:app
     envVars:
-      - key: SECRET_KEY
-        generateValue: true
       - key: DATABASE_URI
-        value: sqlite:///tmp/payroll.db  # Changed to /tmp
+        value: sqlite:////tmp/payroll.db
     plan: free
