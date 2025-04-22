@@ -2,15 +2,12 @@ services:
   - type: web
     name: payrollpro-web
     runtime: python
-    buildCommand: |
-      pip install -r requirements.txt
-      python -m pip install gunicorn
-    startCommand: gunicorn --worker-tmp-dir /dev/shm app_backend.main:app
+    pythonVersion: "3.11.11"
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app_backend.main:app
     envVars:
       - key: SECRET_KEY
         generateValue: true
       - key: DATABASE_URI
-        value: sqlite:///tmp/payroll.db  # Changed to /tmp
-    
-    # REMOVED disk section entirely
+        value: sqlite:///var/tmp/payroll.db
     plan: free
