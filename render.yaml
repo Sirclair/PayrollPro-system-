@@ -3,11 +3,13 @@ services:
     name: payrollpro-web
     runtime: python
     pythonVersion: "3.11.11"
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app_backend.main:app
+    buildCommand: |
+      python -m pip install --upgrade pip
+      python -m pip install -r requirements.txt
+    startCommand: gunicorn --worker-tmp-dir /dev/shm app_backend.main:app
     envVars:
       - key: SECRET_KEY
         generateValue: true
       - key: DATABASE_URI
-        value: sqlite:///var/tmp/payroll.db
+        value: sqlite:///tmp/payroll.db  # Changed to /tmp
     plan: free
